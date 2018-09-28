@@ -1,7 +1,7 @@
 // Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
-package form_bind
+package form
 
 import (
 	"errors"
@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func FormBind(q url.Values, obj interface{}) error {
+func Bind(q url.Values, obj interface{}) error {
 	if err := mapForm(obj, q); err != nil {
 		return err
 	}

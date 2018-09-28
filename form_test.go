@@ -1,4 +1,4 @@
-package libs
+package form
 
 import (
 	"net/url"
@@ -27,7 +27,7 @@ type QueryData struct {
 func TestFormMapping1(t *testing.T) {
 	qd := new(QueryData)
 	q := url.Values{}
-	err := FormBind(q, qd)
+	err := Bind(q, qd)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -56,7 +56,7 @@ func TestFormMapping2(t *testing.T) {
 		"field8": {"haha"},
 	}
 
-	err := FormBind(q, qd)
+	err := Bind(q, qd)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
