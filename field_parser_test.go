@@ -16,7 +16,7 @@ type Field4 []string
 type CustomFieldQuery struct {
     Field1  `form:"field1"`
     Field2 `form:"field2"`
-    Field3  `form:"field3"`
+    Field3 *Field3 `form:"field3"`
 }
 
 type WrongQueryData struct {
@@ -37,7 +37,7 @@ func (f2 Field2) FieldParse(input string)  (interface{}, error){
     return strings.Split(input, ","), nil
 }
 
-func (f3 Field3) FieldParse(input string)  (interface{}, error){
+func (f3 *Field3) FieldParse(input string)  (interface{}, error){
     out := Field3{}
     sp := strings.Split(input, ",")
     out[0], out[1] = sp[0], sp[1]
@@ -65,7 +65,7 @@ func TestCustomField(t *testing.T){
     expField3 := Field3{"2", "3"}
     if !(reflect.DeepEqual(expField1, queryData.Field1) &&
         reflect.DeepEqual(expField2, queryData.Field2) &&
-        reflect.DeepEqual(expField3, queryData.Field3)){
+        reflect.DeepEqual(expField3, *queryData.Field3)){
         fmt.Printf("%#v\n", queryData)
         t.Fatal("test failed")
     }
