@@ -15,6 +15,8 @@ struct Query{
 ```
 
 
-支持自定义字段解析，只需要实现 `FieldParse(string) (interface{}, error)`方法即可
+支持自定义字段解析，只需要实现 `FieldParse(string) (interface{}, error)`方法即可,
+
+需要注意的是FieldParse返回的值要是原字段类型，否则会返回错误。
 
 详细使用见`field_parser_test.go`
