@@ -8,8 +8,8 @@
 例如
 ```
 struct Query{
-    Field1 time.Time `form:"field1" time_format:"2006-01-02T15:04:05Z07:00"` // 这个时间格式是默认的
-    Field2 time.Time `form:"field2" time_utc:"true"` // utc格式
+    Field1 time.Time `form:"field1" time_format:"2006-01-02T15:04:05Z07:00"` // 默认时间格式：time.RFC3339
+    Field2 time.Time `form:"field2" time_utc:"true"` // utc时间
     Field3 time.Time `form:"filed3" time_location:"Local"` // local时间
 }
 ```
