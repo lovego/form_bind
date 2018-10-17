@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+    "fmt"
 )
 
 func Bind(q url.Values, obj interface{}) error {
@@ -17,6 +18,25 @@ func Bind(q url.Values, obj interface{}) error {
 		return err
 	}
 	return nil
+}
+
+type InvalidUnmarshalError struct {
+    Type reflect.Type
+}
+
+func (e *InvalidUnmarshalError) Error() string {
+    if e.Type == nil {
+        return "form: Unmarshal(nil)"
+    }
+
+    if e.Type.Kind() != reflect.Ptr {
+        return "form: Unmarshal(non-pointer " + e.Type.String() + ")"
+    }
+    return "form: Unmarshal(nil " + e.Type.String() + ")"
+}
+
+type FieldParser interface {
+    FieldParse(string) (interface{}, error)
 }
 
 // 逗号之间最好不要有空格
@@ -48,12 +68,12 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 			// this would not make sense for JSON parsing but it does for a form
 			// since data is flatten
 			if structFieldKind == reflect.Ptr {
-				if !structField.Elem().IsValid() {
-					structField.Set(reflect.New(structField.Type().Elem()))
-				}
-				structField = structField.Elem()
+				structField = getStructFieldByPtr(structField)
 				structFieldKind = structField.Kind()
 			}
+			if structFieldKind != reflect.Struct{
+			    return errors.New("if no form tag provided, it must be a struct or its pointer")
+            }
 			if structFieldKind == reflect.Struct {
 				err := mapForm(structField.Addr().Interface(), form)
 				if err != nil {
@@ -71,19 +91,25 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 			inputValue = make([]string, 1)
 			inputValue[0] = defaultValue
 		}
-
-		numElems := len(inputValue)
-		if structFieldKind == reflect.Slice && numElems > 0 {
-			sliceOf := structField.Type().Elem().Kind()
-			slice := reflect.MakeSlice(structField.Type(), numElems, numElems)
-			for i := 0; i < numElems; i++ {
-				if err := setWithProperType(sliceOf, inputValue[i], slice.Index(i)); err != nil {
-					return err
-				}
-			}
-			val.Field(i).Set(slice)
-			continue
-		}
+		if fieldInterf, isFieldBinder := structField.Interface().(FieldParser); isFieldBinder{
+            if structFieldKind == reflect.Ptr {
+                structField = getStructFieldByPtr(structField)
+                structFieldKind = structField.Kind()
+            }
+            parsed, err := fieldInterf.FieldParse(inputValue[0])
+            if err != nil{
+                return err
+            }
+            if reflect.TypeOf(parsed).Kind() != structFieldKind{
+                return fmt.Errorf("field: %s wrong parsed type: %T", typeField.Name, parsed)
+            }
+            structField.Set(reflect.ValueOf(parsed))
+            continue
+        }
+        if structFieldKind == reflect.Slice && len(inputValue) > 0 {
+            setSliceField(structField, inputValue)
+            continue
+        }
 		if _, isTime := structField.Interface().(time.Time); isTime {
 			if err := setTimeField(inputValue[0], typeField, structField); err != nil {
 				return err
@@ -95,6 +121,28 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 		}
 	}
 	return nil
+}
+
+func getStructFieldByPtr(structField reflect.Value) reflect.Value{
+
+    if !structField.Elem().IsValid() {
+        structField.Set(reflect.New(structField.Type().Elem()))
+    }
+    structField = structField.Elem()
+    return structField
+}
+
+func setSliceField(structField reflect.Value, inputValue []string) error{
+    elemsNum := len(inputValue)
+    sliceOf := structField.Type().Elem().Kind()
+    slice := reflect.MakeSlice(structField.Type(), elemsNum, elemsNum)
+    for i := 0; i < elemsNum; i++ {
+        if err := setWithProperType(sliceOf, inputValue[i], slice.Index(i)); err != nil {
+            return err
+        }
+    }
+    structField.Set(slice)
+    return nil
 }
 
 func setWithProperType(valueKind reflect.Kind, val string, structField reflect.Value) error {
