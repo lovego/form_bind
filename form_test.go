@@ -14,6 +14,7 @@ type SubData struct {
 	Field6 bool   `form:"field6"`
 	Field7 bool   `form:"field7"`
 	Field8 string `form:"field8,default=sdf"`
+	Field9 []string `form:"field9"`
 }
 
 type QueryData struct {
@@ -46,6 +47,8 @@ func TestFormMapping1(t *testing.T) {
 
 func TestFormMapping2(t *testing.T) {
 	qd := new(QueryData)
+	qd.SubData = new(SubData)
+	qd.Field9 = []string{"hehe"}
 	q := url.Values{
 		"field1": {"sdf"},
 		"field2": {""},
@@ -54,6 +57,7 @@ func TestFormMapping2(t *testing.T) {
 		"field6": {"0"},
 		"field7": {"1"},
 		"field8": {"haha"},
+		"field9": {"haha", "hehe"},
 	}
 
 	err := Bind(q, qd)
@@ -67,6 +71,7 @@ func TestFormMapping2(t *testing.T) {
 			Field4: true,
 			Field7: true,
 			Field8: "haha",
+			Field9: []string{"haha", "hehe"},
 		},
 	}
 	if !reflect.DeepEqual(expected, qd) {
